@@ -1,0 +1,106 @@
+ANALYSE DE COHERENCE DE LA FORMULATION MILP
+============================================================
+
+Conclusion générale
+-------------------
+
+La formulation est globalement cohérente et suffisamment structurée pour
+commencer le codage MILP. Elle contient les éléments essentiels :
+
+- gestion des stocks ;
+- quantités livrées ;
+- affectation des produits aux compartiments ;
+- stations visitées ;
+- tournées des camions ;
+- arcs de déplacement ;
+- contraintes MTZ pour éliminer les sous-tours.
+
+
+Points à clarifier avant l'implémentation
+------------------------------------------
+
+1. Le stock de sécurité S_ip n'apparaît pas dans les fichiers .dat
+
+La formulation utilise un stock de sécurité S_ip, mais les instances contiennent
+seulement :
+
+- le stock initial ;
+- la demande ;
+- la capacité de la cuve ;
+- le coût de stockage.
+
+Il faut donc décider si l'on utilise :
+
+    S_ip = 0
+
+ou si les stocks de sécurité doivent être ajoutés séparément dans la
+configuration du modèle.
+
+
+2. Le nombre maximal de tournées R_k n'est pas fourni dans les instances
+
+La formulation utilise R_k, mais ce paramètre ne semble pas être présent dans
+les fichiers .dat. Il faudra donc le définir dans la configuration du modèle,
+par exemple :
+
+    MAX_ROUTES_PER_VEHICLE = 1
+
+
+3. Le coût de stockage h_ip n'est pas utilisé dans l'objectif actuel
+
+L'objectif actuel minimise uniquement la distance totale parcourue :
+
+    min somme(c_ij * x_ijkrt)
+
+C'est cohérent avec la formulation actuelle, mais le paramètre h_ip reste
+inutilisé. Si l'on veut également minimiser les coûts de stockage, il faudra
+ajouter un terme de la forme :
+
+    somme(h_ip * I_ipt)
+
+à la fonction objectif.
+
+
+4. Une station peut être visitée sans recevoir de livraison
+
+Les contraintes autorisent y_ikrt = 1 avec des quantités livrées nulles. Ce
+n'est pas une erreur mathématique, mais une visite sans livraison est inutile
+dans le contexte du problème.
+
+Si nécessaire, on pourra ajouter une contrainte imposant qu'une station visitée
+reçoive une quantité strictement positive.
+
+
+5. La notation R_k peut être améliorée
+
+R_k est utilisé à la fois pour désigner l'ensemble des tournées et le nombre
+maximal de tournées. Une notation plus claire serait :
+
+    R_k = {1, ..., Rbar_k}
+
+où Rbar_k représente le nombre maximal de tournées du camion k.
+
+
+6. La contrainte MTZ est correcte
+
+La contrainte :
+
+    u_i - u_j + n*x_ij <= n - y_j
+
+impose, lorsque l'arc i -> j est utilisé :
+
+    u_j >= u_i + 1
+
+Elle empêche donc la formation de cycles composés uniquement de stations et
+déconnectés du dépôt.
+
+
+Conclusion pour le codage
+-------------------------
+
+La formulation peut être implémentée. Les deux points les plus importants à
+fixer avant de commencer sont :
+
+1. la valeur ou la définition de S_ip ;
+2. le nombre maximal de tournées R_k.
+
