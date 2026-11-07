@@ -9,17 +9,36 @@ dans [data/README.md](data/README.md).
 
 Le dossier contient actuellement :
 
+- `main.py` : lancement des étapes actuelles du problème 1 depuis l'IDE ;
 - `src/instance_loader.py` : chargeur Python des fichiers d'instances `.dat` ;
 - `src/model_setup.py` : préparation des ensembles et paramètres du modèle ;
 - `scripts/view_instance.py` : programme d'affichage direct d'une instance exemple ;
 - `docs/phase_analyse_donnees.md` : analyse détaillée du format et toy example ;
 - `docs/analyse_coherence_formulation.txt` : analyse de cohérence de la formulation.
 
+## Lancement depuis l'IDE
+
+Ouvrir `main.py` puis cliquer sur le bouton ▶ pour exécuter le fichier Python.
+Il affiche l'instance, prépare les données et déclare les variables Gurobi.
+Les chemins sont calculés depuis le fichier : le dossier courant du terminal
+n'a pas d'importance.
+
+Sélectionner l'interpréteur Python 3.12 qui contient Gurobi :
+`C:\Users\pret\AppData\Local\Python\pythoncore-3.12-64\python.exe`.
+Dans VS Code, utiliser « Python: Select Interpreter » dans la palette de
+commandes (`Ctrl+Shift+P`) si nécessaire.
+
+Pour changer d'instance, modifier `INSTANCE_NAME` en haut de `main.py`.
+Le stock de sécurité et le nombre maximal de tournées sont aussi configurables
+dans ce fichier. Aucune optimisation n'est encore lancée : les contraintes
+et l'objectif restent à implémenter.
+
 ## Architecture du projet
 
 ```text
 Optimization/
 ├── README.md
+├── main.py
 ├── src/
 │   ├── __init__.py
 │   ├── instance_loader.py
