@@ -3,6 +3,10 @@
 Ce projet porte sur l'optimisation des tournées de camions qui livrent du
 carburant à plusieurs stations pendant plusieurs périodes.
 
+Les 670 instances officielles du benchmark sont disponibles dans
+`data/instances/mcd/`. La provenance et les vérifications sont détaillées
+dans [data/README.md](data/README.md).
+
 Le dossier contient actuellement :
 
 - `src/instance_loader.py` : chargeur Python des fichiers d'instances `.dat` ;
@@ -46,7 +50,7 @@ valide. Les contraintes et la fonction objectif seront ajoutées ensuite.
 Le programme `view_instance.py` utilise par défaut le fichier :
 
 ```text
-/Archive 2/mcd-10-1-3-5-1-1.dat
+data/instances/mcd/mcd-10-1-3-5-1-1.dat
 ```
 
 Son contenu brut est :
@@ -195,7 +199,7 @@ Dans Python, la matrice est accessible avec `data.distances[i][j]`.
 from src.instance_loader import load_instance
 
 data = load_instance(
-    "/Users/mana/Downloads/Archive 2/mcd-10-1-3-5-1-1.dat",
+    "data/instances/mcd/mcd-10-1-3-5-1-1.dat",
     option=0,
 )
 
@@ -228,7 +232,7 @@ data = load_instance("/chemin/vers/instance.dat", option=3)
 
 ## 8. Affichage direct d'une instance
 
-Depuis le terminal macOS :
+Depuis le dossier parent du projet, avec Python 3.10 ou plus récent :
 
 ```bash
 cd "/Users/mana/Documents/ChatGPT/Optimization"
@@ -245,7 +249,7 @@ Pour afficher une autre instance, modifier `DEFAULT_INSTANCE` dans
 
 ```python
 DEFAULT_INSTANCE = Path(
-    "/Users/mana/Downloads/Archive 2/mcd-10-1-3-5-1-1.dat"
+    "data/instances/mcd/mcd-10-1-3-5-1-1.dat"
 )
 ```
 

@@ -118,7 +118,7 @@ def prepare_model_data(
 
 
 if __name__ == "__main__":
-    example = Path("/Users/mana/Downloads/Archive 2/mcd-10-1-3-5-1-1.dat")
+    example = PROJECT_ROOT / "data/instances/mcd/mcd-10-1-3-5-1-1.dat"
     data = prepare_model_data(example)
     print("Étape 1 - préparation des données terminée")
     print(f"Lieux : {data.locations}")

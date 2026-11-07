@@ -156,7 +156,7 @@ def variable_counts(variables: GurobiVariables) -> Dict[str, int]:
 
 
 if __name__ == "__main__":
-    instance_path = Path("/Users/mana/Downloads/Archive 2/mcd-10-1-3-5-1-1.dat")
+    instance_path = PROJECT_ROOT / "data/instances/mcd/mcd-10-1-3-5-1-1.dat"
     data = prepare_model_data(instance_path)
     try:
         model, variables = build_gurobi_model(data)

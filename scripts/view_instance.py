@@ -16,9 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.instance_loader import load_instance
 
 
-DEFAULT_INSTANCE = Path(
-    "/Users/mana/Downloads/Archive 2/mcd-10-1-3-5-1-1.dat"
-)
+DEFAULT_INSTANCE = PROJECT_ROOT / "data/instances/mcd/mcd-10-1-3-5-1-1.dat"
 
 
 def print_instance(path: Path) -> None:
