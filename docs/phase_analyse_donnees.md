@@ -62,32 +62,36 @@ jours, deux carburants `A/B`, et un camion aux compartiments `10` et `8`.
 
 Distances : `d(0,1)=5`, `d(0,2)=10`, `d(1,2)=5`.
 
-### Livraison du jour 1
+### Livraisons : deux tournées par jour
 
-Le camion charge `8 A` dans le compartiment 1 et `5 B` dans le compartiment
-2. Il suit `0 -> 1 -> 2 -> 0` et livre :
+Pour cet exemple, fixer `MAX_ROUTES_PER_VEHICLE = 2` et `SECURITY_STOCK = 0`.
+Chaque compartiment est réservé à un seul couple station-produit par tournée.
 
-- station 1 : `5 A + 3 B` ;
-- station 2 : `3 A + 2 B`.
+| Jour | Tournée | Parcours | Compartiment 1 (capacité 10) | Compartiment 2 (capacité 8) |
+|---|---|---|---|---|
+| 1 | 1 | 0 -> 1 -> 0 | 5 A pour la station 1 | 3 B pour la station 1 |
+| 1 | 2 | 0 -> 2 -> 0 | 3 A pour la station 2 | 2 B pour la station 2 |
+| 2 | 1 | 0 -> 1 -> 0 | 4 A pour la station 1 | 2 B pour la station 1 |
+| 2 | 2 | 0 -> 2 -> 0 | 2 A pour la station 2 | 4 B pour la station 2 |
 
-Vérifications :
+Les compartiments sont rechargés au dépôt entre les tournées. Aucun compartiment
+n'est partagé entre stations pendant une tournée. Tous les chargements respectent
+les capacités 10 et 8 ; le remplissage partiel est autorisé.
 
-1. Les compartiments respectent `8 <= 10` et `5 <= 8`.
-2. Les livraisons égalent exactement les demandes du jour 1.
-3. Après livraison, les stocks sont `7 A / 4 B` à la station 1 et `4 A / 4 B`
-   à la station 2, sous les capacités des cuves.
-4. Après consommation, il reste `2 A / 1 B` à la station 1 et `1 A / 2 B` à la
-   station 2.
-5. Chaque compartiment transporte un seul produit : les volumes A et B sont
-   suivis séparément.
+Avant consommation, les stocks A/B valent au jour 1 : 7/4 pour la station 1 et
+4/4 pour la station 2 ; au jour 2 : 6/3 et 3/6. Ils respectent les capacités des
+cuves. Après consommation, les stocks restent chaque jour 2/1 et 1/2.
+Les demandes sont couvertes par le stock disponible et les livraisons : il n'est
+pas nécessaire, en général, de livrer autant que la demande de chaque période.
 
-Pour le jour 2, le camion peut charger `6 A` et `6 B`, puis livrer `4 A + 2 B`
-à la station 1 et `2 A + 4 B` à la station 2.
+Cet exemple illustre un plan réalisable, sans prétendre minimiser la distance.
+Il est vérifié par `test_documented_example`. Il utilise deux tournées et ne
+représente donc pas la restriction du benchmark à une tournée par camion.
 
 ## Utilisation
 
 ```python
-from instance_loader import load_instance
+from src.instance_loader import load_instance
 
 data = load_instance("/chemin/vers/mcd-10-1-3-5-1-1.dat", option=0)
 print(data.coordinates[1])
@@ -97,5 +101,5 @@ print(data.demand[1][1][1])
 Ou depuis le terminal :
 
 ```bash
-python instance_loader.py "/chemin/vers/instance.dat" --option 0
+python src/instance_loader.py "/chemin/vers/instance.dat" --option 0
 ```

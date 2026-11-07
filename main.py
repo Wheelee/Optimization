@@ -14,6 +14,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 INSTANCE_NAME = "mcd-10-1-3-5-1-1.dat"
 SECURITY_STOCK = 0.0
 MAX_ROUTES_PER_VEHICLE = 1
+# Ces paramètres acceptent aussi des dictionnaires complets :
+# SECURITY_STOCK = {(station, produit): valeur, ...}
+# MAX_ROUTES_PER_VEHICLE = {camion: nombre_de_tournees, ...}
 
 
 def main() -> None:

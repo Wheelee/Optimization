@@ -285,26 +285,46 @@ DEFAULT_INSTANCE = Path(
 )
 ```
 
-## 9. Toy example
+## 9. Exemple manuel vérifié
 
-On peut vérifier le fonctionnement du modèle avec un dépôt, deux stations,
-deux jours, deux carburants `A` et `B`, et un camion composé de deux
-compartiments de capacités `10` et `8`.
+L'exemple détaillé dans [phase_analyse_donnees.md](docs/phase_analyse_donnees.md)
+utilise deux stations, deux produits, deux jours et un camion à deux compartiments
+(capacités 10 et 8). Il autorise deux tournées par jour : une tournée pour chaque
+station. Chaque compartiment dessert un seul couple station-produit par tournée.
+Le test `test_documented_example` vérifie les livraisons et les stocks de ce plan.
 
-Une livraison possible le jour 1 est :
+## 10. Configuration et périmètre de validation
 
-- compartiment 1 : `8 A` ;
-- compartiment 2 : `5 B` ;
-- station 1 : `5 A + 3 B` ;
-- station 2 : `3 A + 2 B`.
+`SECURITY_STOCK` accepte une valeur commune ou un dictionnaire complet
+`{(station, produit): valeur}`. `MAX_ROUTES_PER_VEHICLE` accepte un entier commun
+ou un dictionnaire complet `{camion: nombre}`. Les clés manquantes ou en trop sont
+rejetées. Les stocks doivent être finis, non négatifs et au plus égaux aux stocks
+initiaux ; les nombres de tournées sont des entiers strictement positifs.
 
-Les contrôles à effectuer sont :
+Le format MCD fournit un nombre commun de compartiments, mais des capacités
+individuelles pour chaque camion/compartiment. Il ne décrit pas directement des
+camions avec des nombres de compartiments différents. Les instances originales
+sont conservées ; une extension du format serait nécessaire pour ce cas général.
 
-1. chaque chargement respecte la capacité de son compartiment ;
-2. chaque station reçoit au moins sa demande ;
-3. le stock après livraison ne dépasse pas la capacité de la cuve ;
-4. le stock après consommation reste cohérent pour la période suivante ;
-5. un compartiment ne mélange pas plusieurs produits.
+Le modèle actuel suit `optimisation (2).pdf` : remplissage partiel permis et
+objectif prévu de distance seule. La formulation `single route formulation (2).pdf`
+présente une variante différente : compartiments affectés pleins et objectif
+transport + stockage. L'adaptation à cette variante et la comparaison à ses
+résultats restent à réaliser explicitement ; une seule tournée ne suffit pas à
+rendre les modèles équivalents. Ne pas ajouter le coût de stockage à l'objectif
+du problème 1 sans distinguer cette variante de validation.
 
-Ce toy example permet de comprendre les contraintes avant d'implémenter le
-solveur d'optimisation.
+La convention « livraisons avant consommation » vient de notre formulation et
+doit être explicitée dans le rapport. Les stocks de sécurité par défaut sont nuls,
+car les fichiers MCD ne les fournissent pas.
+
+## 11. Environnement Gurobi
+
+Les tests et la petite instance à une période fonctionnent avec la licence
+actuellement disponible. Lors de la vérification du 7 novembre 2026, l'instance
+`mcd-10-1-3-5-3-1.dat` (2 895 variables, 3 165 contraintes) a été refusée avec
+l'erreur Gurobi 10010 : modèle trop grand pour la licence limitée utilisée.
+Pour résoudre ces instances, configurer une licence autorisant leur taille.
+Ce refus n'est pas une preuve d'infaisabilité ; ne pas retirer de contraintes
+pour contourner la limite. Les tests à objectif nul ne mesurent pas encore
+la performance de l'optimisation des distances.

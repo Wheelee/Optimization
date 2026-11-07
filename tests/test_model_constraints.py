@@ -31,21 +31,25 @@ from src.model_variables import build_gurobi_model
 
 
 class ConstraintTests(unittest.TestCase):
-    def make_model(self, rows, periods=1, compartments=1, routes=1, safety=0):
+    def make_model(self, rows, periods=1, compartments=1, routes=1, safety=0,
+                   products=1, capacities=None):
         """Crée une instance temporaire, ses variables et toutes les contraintes.
 
-        Chaque ligne de station contient : x, y, stock initial, demandes par
-        période, capacité de cuve, coût de stockage. On vérifie également que
+        Chaque ligne suit le format MCD : x, y, stocks par produit, demandes
+        par produit puis période, couples capacité/coût par produit.
+        capacities contient une liste de capacités par camion (même nombre
+        de compartiments, comme dans le format MCD). On vérifie également que
         les compteurs de contraintes correspondent au total du modèle.
         Le fichier temporaire est supprimé après lecture ; Gurobi est libéré
         automatiquement à la fin du test grâce à addCleanup.
         """
-        # Un produit, un camion, compartiments de capacité 10.
+        capacities = capacities if capacities is not None else [[10] * compartments]
+        compartments = len(capacities[0])
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "toy.dat"
             path.write_text(
-                f"{len(rows)} 1 {compartments} 1 {periods}\n0 0\n"
-                + " ".join(["10"] * compartments) + "\n"
+                f"{len(rows)} {products} {compartments} {len(capacities)} {periods}\n0 0\n"
+                + " ".join(str(q) for truck in capacities for q in truck) + "\n"
                 + "\n".join(rows), encoding="utf-8",
             )
             data = prepare_model_data(path, safety, routes)
@@ -61,6 +65,65 @@ class ConstraintTests(unittest.TestCase):
         # Objectif nul : on vérifie uniquement la faisabilité.
         model.optimize()
         self.assertEqual(model.Status, expected)
+
+    def test_two_products_need_separate_compartments(self):
+        """(5)-(6) Deux produits demandés : un compartiment échoue, deux suffisent."""
+        row = ["1 0 0 0 3 4 10 0.01 10 0.01"]
+        for capacities, expected in [([[10]], gp.GRB.INFEASIBLE),
+                                     ([[3, 4]], gp.GRB.OPTIMAL)]:
+            with self.subTest(capacities=capacities):
+                model, _ = self.make_model(row, products=2, capacities=capacities)
+                self.assert_status(model, expected)
+
+    def test_two_heterogeneous_trucks_supply_one_station(self):
+        """(2), (5)-(9) Une demande de 11 impose deux camions de capacités 4 et 7."""
+        model, v = self.make_model(["1 0 0 11 20 0.01"], capacities=[[4], [7]])
+        self.assert_status(model, gp.GRB.OPTIMAL)
+        for k, quantity in [(1, 4), (2, 7)]:
+            self.assertAlmostEqual(v.delivery[1, 1, k, 1, 1, 1].X, quantity)
+            self.assertAlmostEqual(v.visited[1, k, 1, 1].X, 1)
+
+    def test_individual_safety_stocks_and_route_limits(self):
+        """Les stocks 1/2 et les limites 1/2 s'appliquent aux bons indices."""
+        model, v = self.make_model(
+            ["1 0 1 2 1 1 10 0.01 10 0.01"], products=2,
+            capacities=[[3], [4]], safety={(1, 1): 1, (1, 2): 2},
+            routes={1: 1, 2: 2},
+        )
+        self.assertNotIn((1, 2, 1), v.active_route)
+        self.assertIn((2, 2, 1), v.active_route)
+        for key in v.delivery:
+            model.addConstr(v.delivery[key] == 0)
+        self.assert_status(model, gp.GRB.INFEASIBLE)
+
+    def test_invalid_configuration_is_rejected(self):
+        """Rejette valeurs non finies, limites non entières et dictionnaires incomplets."""
+        for options in [dict(safety=float('nan')), dict(safety=float('inf')),
+                        dict(safety={}), dict(routes={}), dict(routes=1.5),
+                        dict(routes=0), dict(safety=3)]:
+            with self.subTest(options=options), self.assertRaises(ValueError):
+                self.make_model(["1 0 2 1 10 0.01"], **options)
+
+    def test_documented_example(self):
+        """Vérifie les deux jours documentés avec deux tournées et deux produits.
+
+        Chaque tournée dessert une seule station avec deux compartiments.
+        Les livraisons égalent les demandes ; les stocks finaux restent 2/1 et 1/2.
+        """
+        model, v = self.make_model([
+            "3 4 2 1 5 4 3 2 12 0.01 10 0.01",
+            "6 8 1 2 3 2 2 4 10 0.01 10 0.01",
+        ], periods=2, products=2, capacities=[[10, 8]], routes=2)
+        quantities = {(1, 1): (5, 3), (1, 2): (4, 2),
+                      (2, 1): (3, 2), (2, 2): (2, 4)}
+        for key, variable in v.delivery.items():
+            i, p, k, l, r, t = key
+            model.addConstr(variable == (quantities[i, t][p - 1]
+                                         if r == i and l == p else 0))
+        self.assert_status(model, gp.GRB.OPTIMAL)
+        for (i, p, t), variable in v.stock.items():
+            self.assertAlmostEqual(variable.X, {(1, 1): 2, (1, 2): 1,
+                                               (2, 1): 1, (2, 2): 2}[i, p])
 
     def test_partial_load_and_inventory_across_periods(self):
         """Accepte une charge partielle et reporte correctement le stock sur deux jours.
