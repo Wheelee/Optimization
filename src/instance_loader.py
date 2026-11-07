@@ -8,6 +8,12 @@ from typing import List, Tuple, Union
 
 @dataclass
 class Instance:
+    """Regroupe les dimensions et tableaux lus dans une instance MCD.
+
+    Le dépôt porte l'indice 0 ; stations, produits, camions, compartiments et
+    périodes commencent à 1. station_order conserve les identifiants d'origine
+    des stations après un éventuel réordonnancement.
+    """
     n: int
     m: int
     comps: int
@@ -24,20 +30,27 @@ class Instance:
 
     @property
     def vehicles(self) -> int:
+        """Renvoie le nombre de camions (alias lisible du paramètre k)."""
         return self.k
 
     @property
     def periods(self) -> int:
+        """Renvoie le nombre de périodes (alias lisible du paramètre h)."""
         return self.h
 
 
 def _rounded_euclidean(a: Tuple[int, int], b: Tuple[int, int]) -> int:
+    """Calcule la distance euclidienne, arrondie à l'entier (0,5 vers le haut)."""
     return int(hypot(a[0] - b[0], a[1] - b[1]) + 0.5)
 
 
 def _order_stations(instance: Instance, option: int) -> List[int]:
-    """0 fichier, 1 demande totale, 2 produit 1,
-    3 distance croissante, 4 distance décroissante."""
+    """Renvoie les identifiants des stations dans l'ordre choisi, sans les modifier.
+
+    Options : 0 = ordre du fichier ; 1 = demande totale décroissante ;
+    2 = demande du produit 1 décroissante ; 3/4 = distance au dépôt
+    croissante/décroissante. Une option inconnue déclenche ValueError.
+    """
     stations = list(range(1, instance.n + 1))
     if option == 0:
         return stations
@@ -58,6 +71,11 @@ def _order_stations(instance: Instance, option: int) -> List[int]:
 
 
 def _reorder(instance: Instance, station_order: List[int]) -> Instance:
+    """Crée une instance réindexée selon station_order en conservant le dépôt à 0.
+
+    Réordonne les données des stations et les deux axes de la matrice des
+    distances. Les caractéristiques des camions restent identiques.
+    """
     order = [0] + station_order
     return Instance(
         n=instance.n, m=instance.m, comps=instance.comps,
@@ -74,7 +92,13 @@ def _reorder(instance: Instance, station_order: List[int]) -> Instance:
 
 
 def load_instance(path: Union[str, Path], option: int = 0) -> Instance:
-    """Charge un fichier .dat et applique l'option de tri demandée."""
+    """Lit un fichier .dat MCD et renvoie une Instance prête à être exploitée.
+
+    Lit les dimensions, le dépôt, les compartiments puis les stations ; calcule
+    les distances et applique le tri demandé. Signale un fichier inaccessible,
+    incomplet ou contenant des valeurs supplémentaires. La validation physique
+    des données est effectuée séparément par validate_instance.
+    """
     path = Path(path)
     try:
         tokens = path.read_text(encoding="utf-8").split()
@@ -83,6 +107,7 @@ def load_instance(path: Union[str, Path], option: int = 0) -> Instance:
     cursor = 0
 
     def take_int() -> int:
+        """Lit le prochain entier et avance le curseur ; signale une fin prématurée."""
         nonlocal cursor
         if cursor >= len(tokens):
             raise ValueError(f"Fichier incomplet à la position {cursor}")
@@ -91,6 +116,7 @@ def load_instance(path: Union[str, Path], option: int = 0) -> Instance:
         return value
 
     def take_float() -> float:
+        """Lit le prochain réel et avance le curseur ; signale une fin prématurée."""
         nonlocal cursor
         if cursor >= len(tokens):
             raise ValueError(f"Fichier incomplet à la position {cursor}")

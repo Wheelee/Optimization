@@ -20,6 +20,12 @@ DEFAULT_INSTANCE = PROJECT_ROOT / "data/instances/mcd/mcd-10-1-3-5-1-1.dat"
 
 
 def print_instance(path: Path) -> None:
+    """Charge le fichier indiqué et affiche ses données dans le terminal.
+
+    Présente les dimensions, capacités des compartiments, stocks et demandes
+    par station/produit, puis la matrice des distances. Ne crée aucun modèle
+    Gurobi et ne modifie pas le fichier ; sert à inspecter les données d'entrée.
+    """
     data = load_instance(path, option=0)
 
     print("=" * 70)

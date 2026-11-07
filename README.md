@@ -12,6 +12,8 @@ Le dossier contient actuellement :
 - `main.py` : lancement des étapes actuelles du problème 1 depuis l'IDE ;
 - `src/instance_loader.py` : chargeur Python des fichiers d'instances `.dat` ;
 - `src/model_setup.py` : préparation des ensembles et paramètres du modèle ;
+- `src/model_variables.py` : déclaration des variables Gurobi ;
+- `src/model_constraints.py` : contraintes de stocks, compartiments et tournées (MTZ) ;
 - `scripts/view_instance.py` : programme d'affichage direct d'une instance exemple ;
 - `docs/phase_analyse_donnees.md` : analyse détaillée du format et toy example ;
 - `docs/analyse_coherence_formulation.txt` : analyse de cohérence de la formulation.
@@ -19,7 +21,8 @@ Le dossier contient actuellement :
 ## Lancement depuis l'IDE
 
 Ouvrir `main.py` puis cliquer sur le bouton ▶ pour exécuter le fichier Python.
-Il affiche l'instance, prépare les données et déclare les variables Gurobi.
+Il affiche l'instance, prépare les données, déclare les variables Gurobi et
+ajoute les contraintes en affichant leur nombre par famille.
 Les chemins sont calculés depuis le fichier : le dossier courant du terminal
 n'a pas d'importance.
 
@@ -30,8 +33,18 @@ commandes (`Ctrl+Shift+P`) si nécessaire.
 
 Pour changer d'instance, modifier `INSTANCE_NAME` en haut de `main.py`.
 Le stock de sécurité et le nombre maximal de tournées sont aussi configurables
-dans ce fichier. Aucune optimisation n'est encore lancée : les contraintes
-et l'objectif restent à implémenter.
+dans ce fichier. Aucune optimisation n'est encore lancée par `main.py` :
+la fonction objectif reste à implémenter.
+
+Les contraintes suivent les équations (2) à (14) de `optimisation (2).pdf` :
+livraisons avant consommation, remplissage partiel autorisé, un seul couple
+station-produit par compartiment et par tournée, livraisons fractionnées entre
+camions ou tournées autorisées. La borne supérieure des stocks est déjà définie
+sur les variables. Le stock initial doit être au moins égal au stock de sécurité.
+
+Pour vérifier les contraintes sur de petites instances, depuis `Optimization`,
+lancer `python -B -m unittest discover -s tests -v` avec l'interpréteur Gurobi.
+Ces tests résolvent des problèmes de faisabilité à objectif nul.
 
 ## Architecture du projet
 

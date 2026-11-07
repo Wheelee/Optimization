@@ -34,7 +34,11 @@ class GurobiVariables:
 
 
 def _require_gurobi():
-    """Importe Gurobi seulement lors de la construction du modèle."""
+    """Renvoie le module gurobipy ou signale son absence par RuntimeError.
+
+    L'import différé permet de lire les données sans Gurobi. La disponibilité
+    de la licence sera vérifiée par Gurobi lors de la création du modèle.
+    """
     try:
         import gurobipy as gp
         return gp
@@ -52,7 +56,11 @@ def build_gurobi_model(
     """Crée un modèle Gurobi et toutes les variables de l'étape 2.
 
     Retourne ``(model, variables)``. Les contraintes et l'objectif seront
-    ajoutés dans les étapes suivantes.
+    ajoutés dans les étapes suivantes. Les dictionnaires de variables sont
+    indexés selon la formulation : stocks I, activations a, visites y, arcs x,
+    affectations z, livraisons q et ordres MTZ u. Les types binaires/continus
+    et les bornes physiques sont fixés ici. L'appelant doit libérer le modèle
+    avec model.dispose() après utilisation.
     """
     gp = _require_gurobi()
     model = gp.Model(model_name)
@@ -144,6 +152,10 @@ def build_gurobi_model(
 
 
 def variable_counts(variables: GurobiVariables) -> Dict[str, int]:
+    """Renvoie le nombre de variables de chaque famille pour l'affichage de main.
+
+    Compte les entrées des dictionnaires sans modifier ni résoudre le modèle.
+    """
     return {
         "I_stock": len(variables.stock),
         "a_tournee": len(variables.active_route),

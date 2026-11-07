@@ -23,6 +23,12 @@ MAX_ROUTES_PER_VEHICLE = 1
 
 @dataclass
 class ModelData:
+    """Rassemble l'instance, les ensembles d'indices et les stocks de sécurité.
+
+    compartments et routes donnent les indices disponibles pour chaque camion.
+    arcs contient les déplacements orientés entre lieux distincts, dépôt inclus.
+    Ces données servent à créer les variables puis les contraintes Gurobi.
+    """
     instance: Instance
     locations: List[int]
     stations: List[int]
@@ -36,7 +42,12 @@ class ModelData:
 
 
 def validate_instance(instance: Instance) -> None:
-    """Vérifie les conditions de base nécessaires au modèle."""
+    """Vérifie les dimensions principales, stocks, demandes et capacités.
+
+    Lève ValueError si un contrôle échoue (par exemple un stock initial supérieur
+    à la capacité de cuve). Ces contrôles ne garantissent pas la faisabilité
+    globale des livraisons, qui sera déterminée par le solveur.
+    """
     if instance.n < 1:
         raise ValueError("L'instance doit contenir au moins une station")
     if instance.m < 1 or instance.k < 1 or instance.h < 1:
@@ -74,7 +85,14 @@ def prepare_model_data(
     security_stock: float = SECURITY_STOCK,
     max_routes_per_vehicle: int = MAX_ROUTES_PER_VEHICLE,
 ) -> ModelData:
-    """Charge une instance et construit tous les ensembles de la formulation."""
+    """Charge et valide l'instance, puis renvoie les données du modèle dans ModelData.
+
+    Conserve l'ordre des stations du fichier, construit les arcs sans boucles
+    et attribue à chaque camion max_routes_per_vehicle tournées possibles par
+    période. security_stock s'applique à tous les couples station-produit :
+    il doit être positif ou nul et ne pas dépasser leur stock initial.
+    Aucune variable ni contrainte Gurobi n'est créée à cette étape.
+    """
     if security_stock < 0:
         raise ValueError("Le stock de sécurité ne peut pas être négatif")
     if max_routes_per_vehicle < 1:
@@ -82,6 +100,13 @@ def prepare_model_data(
 
     instance = load_instance(instance_path, option=0)
     validate_instance(instance)
+    for station in range(1, instance.n + 1):
+        for product in range(1, instance.m + 1):
+            if security_stock > instance.initial_inventory[station][product]:
+                raise ValueError(
+                    f"Stock de sécurité supérieur au stock initial : "
+                    f"station {station}, produit {product}"
+                )
 
     locations = list(range(instance.n + 1))
     stations = list(range(1, instance.n + 1))
